@@ -26,32 +26,42 @@ jobs:
         run: node scripts/download-postgresql.js
 
       - name: Sync frontend from web repo
-        run: node scripts/sync-from-web-repo.js
+        run: node scripts/sync-from-web-repo.js --from-git
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm install --legacy-peer-deps
 
       - name: Build frontend
         run: |
           cd frontend
-          npm install
-          npm run build
+          copy svelte.config.desktop.js svelte.config.js
+          npx vite build
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
 
       - name: Build Windows installer
         run: npm run build:windows
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: AQURA-Desktop-Installer
-          path: build/*.exe
+          path: dist/*.exe
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: build/*.exe
+          files: |
+            dist/*.exe
+            dist/latest.yml
           draft: false
           prerelease: false
         env:

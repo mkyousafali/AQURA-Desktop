@@ -1,0 +1,326 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Universal box-sizing for better mobile compatibility */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Urban-Express Design System Variables */
+:root {
+  /* Brand Colors - Official Pantone Profile */
+  --color-primary: #10B300; /* PANTONE P 24-8 C - Primary Green */
+  --color-primary-light: #A5C032; /* PANTONE P 8-15 C - Light Green */
+  --color-primary-dark: #6B9B20; /* PANTONE P 20-15 C - Dark Green */
+  --color-secondary: #C8A232; /* PANTONE P 161-15 C - Golden Yellow */
+  --color-accent: #E17739; /* PANTONE P 154-15 C - Orange */
+  --color-accent-dark: #D96539; /* PANTONE P 148-8 C - Deep Orange */
+  
+  /* Brand Gradients */
+  --gradient-primary: linear-gradient(135deg, #10B300 0%, #6B9B20 50%, #A5C032 100%);
+  --gradient-accent: linear-gradient(135deg, #C8A232 0%, #E17739 50%, #D96539 100%);
+  --gradient-brand: linear-gradient(90deg, #10B300 0%, #6B9B20 16.67%, #A5C032 33.33%, #C8A232 50%, #E17739 66.67%, #D96539 83.33%, #D96539 100%);
+  
+  /* UI Colors */
+  --color-ink: #0F172A;
+  --color-ink-light: #334155;
+  --color-background: #F8FAFC;
+  --color-surface: #F8FAFC;
+  --color-surface-dark: #E2E8F0;
+  --color-white: #FFFFFF;
+  --color-border: #E2E8F0;
+  --color-border-light: #F1F5F9;
+  --color-border-focus: #10B300;
+  
+  /* Semantic Colors */
+  --color-info: #3B82F6;
+  --color-info-light: #DBEAFE;
+  --color-warning: #C8A232;
+  --color-warning-light: #FFF8E1;
+  --color-danger: #EF4444;
+  --color-danger-light: #FEE2E2;
+  --color-error: #EF4444;
+  --color-error-light: #FEE2E2;
+  --color-success: #10B300;
+  --color-success-light: #E8F5E8;
+  
+  /* Typography */
+  --font-family-ar: 'Tajawal', 'Arabic UI Text', 'SF Arabic', 'Segoe UI Arabic', sans-serif;
+  --font-family-en: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+}
+
+@layer base {
+  /* Root font configuration */
+  html {
+    font-family: var(--font-family-en);
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
+    height: 100%;
+    position: relative;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  /* Arabic font support */
+  html.font-arabic {
+    font-family: "Noto Sans Arabic", "Inter", system-ui, sans-serif;
+  }
+
+  /* Body and scrollbar styling */
+  body {
+    @apply text-gray-900;
+    background: var(--theme-desktop-bg, #F9FAFB);
+    /* Allow body scroll for login page and mobile compatibility */
+    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    touch-action: pan-y;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    position: relative;
+  }
+
+  /* For authenticated users with the desktop interface, prevent body scroll */
+  body.desktop-mode {
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  /* Custom scrollbar for webkit browsers */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+
+  /* RTL support */
+  [dir="rtl"] {
+    text-align: right;
+  }
+
+  [dir="rtl"] .not-rtl {
+    direction: ltr;
+    text-align: left;
+  }
+}
+
+@layer components {
+  /* Button variants with brand colors */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-soft transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-orange text-white hover:bg-orange-600 focus:ring-primary-orange shadow-sm hover:shadow-md;
+  }
+
+  .btn-secondary {
+    @apply btn bg-primary-green text-white hover:bg-green-600 focus:ring-primary-green shadow-sm hover:shadow-md;
+  }
+
+  .btn-outline {
+    @apply btn border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500;
+  }
+
+  .btn-ghost {
+    @apply btn text-gray-600 hover:bg-gray-100 focus:ring-gray-500;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+
+  /* Form elements */
+  .form-input {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-soft shadow-sm focus:ring-primary-orange focus:border-primary-orange sm:text-sm transition-colors duration-200;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+
+  .form-error {
+    @apply text-sm text-error mt-1;
+  }
+
+  .form-help {
+    @apply text-sm text-gray-500 mt-1;
+  }
+
+  /* Window components */
+  .window-frame {
+    @apply bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden resize;
+    min-width: 320px;
+    min-height: 240px;
+  }
+
+  .window-active {
+    @apply ring-2 ring-primary-orange shadow-xl;
+  }
+
+  .window-header {
+    @apply flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200 cursor-move select-none;
+  }
+
+  .window-content {
+    @apply p-4 overflow-auto;
+    height: calc(100% - 48px); /* Subtract header height */
+  }
+
+  .window-controls {
+    @apply flex items-center space-x-1;
+  }
+
+  .window-control-btn {
+    @apply w-6 h-6 rounded-full flex items-center justify-center text-xs hover:bg-gray-200 transition-colors duration-150;
+  }
+
+  /* Taskbar */
+  .taskbar {
+    @apply fixed bottom-0 left-0 right-0 h-12 bg-white border-t border-gray-200 flex items-center px-4 space-x-2 z-window;
+  }
+
+  .taskbar-item {
+    @apply flex items-center px-3 py-1 rounded-soft text-sm font-medium transition-all duration-200 cursor-pointer select-none;
+  }
+
+  .taskbar-item-active {
+    @apply bg-primary-orange text-white shadow-sm;
+  }
+
+  .taskbar-item-inactive {
+    @apply bg-gray-100 text-gray-700 hover:bg-gray-200;
+  }
+
+  .taskbar-item-minimized {
+    @apply bg-gray-50 text-gray-500 italic;
+  }
+
+  /* Status indicators */
+  .status-success {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800;
+  }
+
+  .status-error {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800;
+  }
+
+  .status-warning {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800;
+  }
+
+  .status-info {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800;
+  }
+
+  /* Loading states */
+  .loading-spinner {
+    @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-orange;
+  }
+
+  /* Command palette */
+  .command-palette {
+    @apply fixed inset-0 z-modal bg-black bg-opacity-50 flex items-start justify-center pt-20;
+  }
+
+  .command-palette-content {
+    @apply bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-lg mx-4 overflow-hidden;
+  }
+
+  .command-palette-input {
+    @apply w-full px-4 py-3 text-lg border-0 focus:ring-0 focus:outline-none;
+  }
+
+  .command-palette-results {
+    @apply max-h-80 overflow-auto border-t border-gray-200;
+  }
+
+  .command-palette-item {
+    @apply flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors duration-150;
+  }
+
+  .command-palette-item-active {
+    @apply bg-primary-orange text-white;
+  }
+
+  /* Notification toast */
+  .toast {
+    @apply fixed top-4 right-4 z-notification max-w-sm bg-white rounded-lg shadow-lg border border-gray-200 p-4 animate-slide-down;
+  }
+
+  .toast-success {
+    @apply border-l-4 border-l-success;
+  }
+
+  .toast-error {
+    @apply border-l-4 border-l-error;
+  }
+
+  .toast-warning {
+    @apply border-l-4 border-l-warning;
+  }
+
+  /* Data tables */
+  .data-table {
+    @apply w-full border-collapse bg-white rounded-lg shadow-sm overflow-hidden;
+  }
+
+  .data-table th {
+    @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200;
+  }
+
+  .data-table td {
+    @apply px-4 py-3 text-sm text-gray-900 border-b border-gray-200;
+  }
+
+  .data-table tr:hover {
+    @apply bg-gray-50;
+  }
+
+  /* RTL-specific adjustments */
+  [dir="rtl"] .window-controls {
+    @apply space-x-reverse;
+  }
+
+  [dir="rtl"] .taskbar {
+    @apply space-x-reverse;
+  }
+
+  [dir="rtl"] .taskbar-item {
+    @apply space-x-reverse;
+  }
+}

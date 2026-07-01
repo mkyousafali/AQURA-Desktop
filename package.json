@@ -1,0 +1,61 @@
+{
+  "name": "aqura-desktop",
+  "version": "1.0.0",
+  "description": "AQURA Desktop - Offline POS System with Cloud Sync",
+  "main": "main.js",
+  "author": "AQURA",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:windows": "electron-builder --windows",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "electron": "^28.0.0",
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.1.0",
+    "keytar": "^7.9.0",
+    "pg": "^8.11.0",
+    "node-fetch": "^3.3.0",
+    "dotenv": "^16.0.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.9.0"
+  },
+  "build": {
+    "appId": "com.aqura.desktop",
+    "productName": "AQURA Desktop",
+    "directories": {
+      "output": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "frontend/build/**/*",
+      "resources/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "resources/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AQURA Desktop"
+    }
+  }
+}

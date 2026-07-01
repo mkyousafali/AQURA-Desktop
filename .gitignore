@@ -1,0 +1,50 @@
+# Node modules
+node_modules/
+
+# Build output
+build/
+dist/
+*.exe
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Electron
+out/
+
+# PostgreSQL binaries (downloaded during build/install)
+resources/postgresql/
+resources/postgresql.zip
+data/
+
+# Frontend synced files (copied from web repo)
+frontend/src/routes/
+frontend/src/lib/components/
+frontend/src/lib/stores/
+frontend/src/lib/utils/
+frontend/src/lib/supabase*.ts
+frontend/static/
+frontend/.svelte-kit/
+frontend/build/
+frontend/node_modules/
+
+# Frontend tracked files (desktop-specific - DON'T IGNORE)
+!frontend/src/desktop/
+!frontend/package.json
+!frontend/vite.config.desktop.ts
+!frontend/.env.desktop
+!frontend/svelte.config.desktop.js

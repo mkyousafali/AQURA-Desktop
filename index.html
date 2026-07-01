@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AQURA Desktop</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-size: 28px;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+
+    .header .subtitle {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .card h2 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 20px;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .status-item {
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+
+    .status-item .label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+
+    .status-item .value {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .status-item.connected {
+      border-left-color: #10b981;
+    }
+
+    .status-item.disconnected {
+      border-left-color: #ef4444;
+    }
+
+    .status-item.syncing {
+      border-left-color: #f59e0b;
+    }
+
+    .btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .btn:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .sync-log {
+      background: #1a1a1a;
+      color: #0f0;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+
+    .sync-log .log-entry {
+      margin-bottom: 5px;
+      padding: 3px 0;
+    }
+
+    .sync-log .log-time {
+      color: #888;
+      margin-right: 10px;
+    }
+
+    .sync-log .log-success {
+      color: #10b981;
+    }
+
+    .sync-log .log-error {
+      color: #ef4444;
+    }
+
+    .sync-log .log-info {
+      color: #60a5fa;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      transition: width 0.3s;
+      border-radius: 4px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge.success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .badge.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge.warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🏪 AQURA Desktop</h1>
+    <p class="subtitle">Offline POS System - Version <span id="version">1.0.0</span></p>
+  </div>
+
+  <div class="main-content">
+    <!-- Database Status Card -->
+    <div class="card">
+      <h2>📊 Database Status</h2>
+      <div class="status-grid">
+        <div class="status-item" id="db-status">
+          <div class="label">Connection</div>
+          <div class="value" id="db-connection">Checking...</div>
+        </div>
+        <div class="status-item">
+          <div class="label">Host</div>
+          <div class="value" id="db-host">-</div>
+        </div>
+        <div class="status-item">
+          <div class="label">Database</div>
+          <div class="value" id="db-name">-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sync Status Card -->
+    <div class="card">
+      <h2>🔄 Sync Status</h2>
+      <div class="status-grid">
+        <div class="status-item" id="sync-status">
+          <div class="label">Status</div>
+          <div class="value" id="sync-state">Idle</div>
+        </div>
+        <div class="status-item">
+          <div class="label">Last Sync</div>
+          <div class="value" id="last-sync">Never</div>
+        </div>
+        <div class="status-item">
+          <div class="label">Tables Synced</div>
+          <div class="value" id="tables-synced">0</div>
+        </div>
+        <div class="status-item">
+          <div class="label">Sync Interval</div>
+          <div class="value" id="sync-interval">15 min</div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 20px;">
+        <button class="btn" id="sync-btn" onclick="triggerSync()">🔄 Sync Now</button>
+      </div>
+
+      <div id="sync-progress" style="display: none; margin-top: 15px;">
+        <div class="label">Progress</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+        <div id="sync-message" style="margin-top: 8px; color: #666; font-size: 14px;"></div>
+      </div>
+    </div>
+
+    <!-- Sync Log Card -->
+    <div class="card">
+      <h2>📝 Sync Log</h2>
+      <div class="sync-log" id="sync-log">
+        <div class="log-entry log-info">
+          <span class="log-time">[SYSTEM]</span>
+          <span>Application started. Waiting for initial sync...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Helper to add log entry
+    function addLog(message, type = 'info') {
+      const log = document.getElementById('sync-log');
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.innerHTML = `<span class="log-time">[${time}]</span><span>${message}</span>`;
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // Load initial status
+    async function loadStatus() {
+      try {
+        // Get database status
+        const dbStatus = await window.electronAPI.getDatabaseStatus();
+        if (dbStatus) {
+          const statusEl = document.getElementById('db-status');
+          const connEl = document.getElementById('db-connection');
+          
+          if (dbStatus.isConnected) {
+            connEl.textContent = '✅ Connected';
+            statusEl.classList.add('connected');
+            document.getElementById('db-host').textContent = dbStatus.config?.host || '-';
+            document.getElementById('db-name').textContent = dbStatus.config?.database || '-';
+            addLog('PostgreSQL connected', 'success');
+          } else {
+            connEl.textContent = '⚠️  Not Available';
+            statusEl.classList.add('disconnected');
+            addLog('PostgreSQL not available - using cloud data', 'warning');
+          }
+        }
+
+        // Get sync status
+        const syncStatus = await window.electronAPI.getSyncStatus();
+        if (syncStatus) {
+          if (syncStatus.lastSyncTime) {
+            document.getElementById('last-sync').textContent = 
+              new Date(syncStatus.lastSyncTime).toLocaleString();
+          }
+          
+          const latest = syncStatus.history?.[syncStatus.history.length - 1];
+          if (latest) {
+            document.getElementById('tables-synced').textContent = latest.tables.synced || 0;
+          }
+        }
+
+        // Get app version
+        const version = await window.electronAPI.getAppVersion();
+        document.getElementById('version').textContent = version;
+
+      } catch (error) {
+        console.error('Failed to load status:', error);
+        addLog('Failed to load status: ' + error.message, 'error');
+      }
+    }
+
+    // Trigger manual sync
+    async function triggerSync() {
+      const btn = document.getElementById('sync-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Syncing...';
+      
+      document.getElementById('sync-progress').style.display = 'block';
+      
+      try {
+        addLog('Manual sync triggered', 'info');
+        const result = await window.electronAPI.triggerSync();
+        
+        if (result.success) {
+          addLog(`Sync completed: ${result.tables.synced} tables synced`, 'success');
+          document.getElementById('tables-synced').textContent = result.tables.synced;
+          document.getElementById('last-sync').textContent = new Date().toLocaleString();
+        } else {
+          addLog(`Sync failed: ${result.error}`, 'error');
+        }
+      } catch (error) {
+        addLog('Sync error: ' + error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 Sync Now';
+        setTimeout(() => {
+          document.getElementById('sync-progress').style.display = 'none';
+        }, 2000);
+      }
+    }
+
+    // Listen for sync events
+    window.electronAPI.onSyncStart((data) => {
+      addLog('Sync started...', 'info');
+      document.getElementById('sync-state').textContent = 'Syncing...';
+      document.getElementById('sync-status').classList.add('syncing');
+      document.getElementById('sync-progress').style.display = 'block';
+    });
+
+    window.electronAPI.onSyncProgress((data) => {
+      const progress = data.progress || 0;
+      document.getElementById('progress-fill').style.width = progress + '%';
+      document.getElementById('sync-message').textContent = data.message || '';
+      addLog(`[${data.phase}] ${data.message}`, 'info');
+    });
+
+    window.electronAPI.onSyncComplete((data) => {
+      addLog(`✅ Sync complete: ${data.tables.synced} tables synced, ${data.tables.failed} failed`, 'success');
+      document.getElementById('sync-state').textContent = 'Idle';
+      document.getElementById('sync-status').classList.remove('syncing');
+      document.getElementById('tables-synced').textContent = data.tables.synced;
+      document.getElementById('last-sync').textContent = new Date(data.endTime).toLocaleString();
+      document.getElementById('progress-fill').style.width = '100%';
+    });
+
+    window.electronAPI.onSyncError((error) => {
+      addLog('❌ Sync error: ' + error.message, 'error');
+      document.getElementById('sync-state').textContent = 'Error';
+    });
+
+    // Load status on startup
+    loadStatus();
+
+    // Refresh status every 30 seconds
+    setInterval(loadStatus, 30000);
+  </script>
+</body>
+</html>

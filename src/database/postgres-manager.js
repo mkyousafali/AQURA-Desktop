@@ -75,9 +75,9 @@ class PostgresManager {
         const { app } = require('electron');
         
         // In development mode, use desktop/resources path
-        // In production mode, use resources next to app.asar
+        // In production mode, extraResources puts files in process.resourcesPath
         if (app.isPackaged) {
-          bundledPath = path.join(path.dirname(app.getAppPath()), 'resources', 'postgresql', 'pgsql');
+          bundledPath = path.join(process.resourcesPath, 'postgresql', 'pgsql');
         } else {
           // Dev mode: desktop/resources/postgresql/pgsql
           bundledPath = path.join(app.getAppPath(), 'resources', 'postgresql', 'pgsql');

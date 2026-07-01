@@ -266,7 +266,62 @@ async function startLocalApiServer() {
         return;
       }
       
-      // Unknown endpoint
+      // Serve frontend static files (SvelteKit build output)
+      let frontendBuildDir = path.join(__dirname, 'frontend', 'build');
+      // In packaged mode, asarUnpack puts files in app.asar.unpacked
+      if (app.isPackaged) {
+        frontendBuildDir = path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'frontend', 'build');
+      }
+      let filePath = pathname === '/' ? '/index.html' : pathname;
+      let fullPath = path.join(frontendBuildDir, filePath);
+      
+      // Security: prevent directory traversal
+      if (!fullPath.startsWith(frontendBuildDir)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end('Forbidden');
+        return;
+      }
+
+      // If file doesn't exist, serve index.html (SPA fallback)
+      if (!fs.existsSync(fullPath) || fs.statSync(fullPath).isDirectory()) {
+        fullPath = path.join(frontendBuildDir, 'index.html');
+      }
+
+      if (fs.existsSync(fullPath)) {
+        const ext = path.extname(fullPath).toLowerCase();
+        const mimeTypes = {
+          '.html': 'text/html',
+          '.js': 'application/javascript',
+          '.css': 'text/css',
+          '.json': 'application/json',
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.gif': 'image/gif',
+          '.svg': 'image/svg+xml',
+          '.ico': 'image/x-icon',
+          '.webp': 'image/webp',
+          '.woff': 'font/woff',
+          '.woff2': 'font/woff2',
+          '.ttf': 'font/ttf',
+          '.eot': 'application/vnd.ms-fontobject',
+          '.mp4': 'video/mp4',
+          '.webm': 'video/webm',
+          '.map': 'application/json'
+        };
+        
+        const contentType = mimeTypes[ext] || 'application/octet-stream';
+        const stat = fs.statSync(fullPath);
+        
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          'Content-Length': stat.size
+        });
+        fs.createReadStream(fullPath).pipe(res);
+        return;
+      }
+
+      // Nothing found
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Not found' }));
       
@@ -319,8 +374,8 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    // Load from built files (for production)
-    mainWindow.loadFile(path.join(__dirname, 'frontend/build/index.html'));
+    // Load from local HTTP server (avoids file:// path issues with SvelteKit)
+    mainWindow.loadURL('http://127.0.0.1:54321');
   }
 
   // Handle load errors

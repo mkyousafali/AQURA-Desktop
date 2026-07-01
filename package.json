@@ -16,7 +16,6 @@
   "dependencies": {
     "electron-store": "^8.1.0",
     "electron-updater": "^6.1.0",
-    "keytar": "^7.9.0",
     "pg": "^8.11.0",
     "node-fetch": "^3.3.0",
     "dotenv": "^16.0.0",
@@ -32,13 +31,27 @@
     "directories": {
       "output": "dist"
     },
+    "asar": true,
+    "asarUnpack": [
+      "frontend/build/**/*"
+    ],
     "files": [
       "main.js",
       "preload.js",
       "src/**/*",
       "frontend/build/**/*",
-      "resources/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/postgresql",
+        "to": "postgresql",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "resources/icon.png",
+        "to": "icon.png"
+      }
     ],
     "win": {
       "target": [

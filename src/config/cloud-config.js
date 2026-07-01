@@ -2,11 +2,9 @@
  * Cloud Configuration Manager
  * 
  * Handles Supabase credentials storage and retrieval using:
- * 1. Windows Credential Manager (keytar) - Primary
- * 2. Electron safeStorage - Backup
+ * 1. Electron-store with encryption - Primary
  */
 
-const keytar = require('keytar');
 const Store = require('electron-store');
 const logger = require('../logger/logger');
 
@@ -17,7 +15,7 @@ const SERVICE_NAME = 'AQURA-Desktop';
 const ACCOUNT_URL = 'supabase-url';
 const ACCOUNT_KEY = 'supabase-service-key';
 
-// Backup encrypted storage
+// Encrypted storage for credentials
 const store = new Store({
   name: 'credentials',
   encryptionKey: 'aqura-desktop-credentials-backup'
@@ -107,7 +105,7 @@ class CloudConfig {
   }
 
   /**
-   * Store credentials in Windows Credential Manager
+   * Store credentials
    */
   async setCredentials(credentials) {
     try {
@@ -117,11 +115,7 @@ class CloudConfig {
         throw new Error('Missing URL or Service Key');
       }
 
-      // Store in Windows Credential Manager
-      await keytar.setPassword(SERVICE_NAME, ACCOUNT_URL, url);
-      await keytar.setPassword(SERVICE_NAME, ACCOUNT_KEY, serviceKey);
-
-      // Store backup in encrypted electron-store
+      // Store in encrypted electron-store
       store.set('url', url);
       store.set('serviceKey', serviceKey);
 
@@ -136,31 +130,16 @@ class CloudConfig {
   }
 
   /**
-   * Retrieve credentials from Windows Credential Manager
+   * Retrieve credentials
    */
   async getCredentials() {
     try {
-      // Try Windows Credential Manager first
-      const url = await keytar.getPassword(SERVICE_NAME, ACCOUNT_URL);
-      const serviceKey = await keytar.getPassword(SERVICE_NAME, ACCOUNT_KEY);
+      const url = store.get('url');
+      const serviceKey = store.get('serviceKey');
 
       if (url && serviceKey) {
         this.credentials = { url, serviceKey };
         logger.info('Credentials loaded from Windows Credential Manager');
-        return this.credentials;
-      }
-
-      // Fallback to encrypted store
-      const backupUrl = store.get('url');
-      const backupKey = store.get('serviceKey');
-
-      if (backupUrl && backupKey) {
-        this.credentials = { url: backupUrl, serviceKey: backupKey };
-        logger.info('Credentials loaded from backup store');
-        
-        // Restore to Credential Manager
-        await this.setCredentials(this.credentials);
-        
         return this.credentials;
       }
 
@@ -192,8 +171,6 @@ class CloudConfig {
    */
   async deleteCredentials() {
     try {
-      await keytar.deletePassword(SERVICE_NAME, ACCOUNT_URL);
-      await keytar.deletePassword(SERVICE_NAME, ACCOUNT_KEY);
       store.clear();
       this.credentials = null;
       logger.info('Credentials deleted');

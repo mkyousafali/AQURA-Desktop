@@ -16,6 +16,7 @@ const cloudConfig = require('./src/config/cloud-config');
 const logger = require('./src/logger/logger');
 const SyncManager = require('./src/sync/sync-manager');
 const DatabaseSync = require('./src/sync/database-sync');
+const FunctionSync = require('./src/sync/function-sync');
 const PostgresManager = require('./src/database/postgres-manager');
 
 let mainWindow;
@@ -96,7 +97,7 @@ async function startLocalApiServer() {
   localApiServer = http.createServer(async (req, res) => {
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', '*');
     
     if (req.method === 'OPTIONS') {
@@ -105,16 +106,61 @@ async function startLocalApiServer() {
       return;
     }
     
-    // Only allow GET requests (read-only)
-    if (req.method !== 'GET') {
-      res.writeHead(405, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Read-only mode: only GET allowed' }));
-      return;
-    }
-    
     try {
       const url = new URL(req.url, `http://localhost:${PORT}`);
       const pathname = url.pathname;
+
+      // RPC endpoint: POST /rest/v1/rpc/function_name
+      if (req.method === 'POST' && pathname.startsWith('/rest/v1/rpc/')) {
+        const funcName = pathname.replace('/rest/v1/rpc/', '');
+        
+        if (!postgresManager || !postgresManager.isConnected) {
+          res.writeHead(503, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Database not connected' }));
+          return;
+        }
+
+        // Read POST body
+        let body = '';
+        for await (const chunk of req) {
+          body += chunk;
+        }
+        const params = body ? JSON.parse(body) : {};
+
+        // Build function call
+        const paramNames = Object.keys(params);
+        const paramValues = Object.values(params);
+        const placeholders = paramNames.map((name, i) => `${name} := $${i + 1}`).join(', ');
+        
+        const sql = paramNames.length > 0
+          ? `SELECT * FROM ${funcName}(${placeholders})`
+          : `SELECT * FROM ${funcName}()`;
+
+        const client = await postgresManager.pool.connect();
+        try {
+          const result = await client.query(sql, paramValues);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result.rows));
+        } catch (dbError) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            code: dbError.code || 'ERROR',
+            message: dbError.message,
+            details: dbError.detail || null,
+            hint: dbError.hint || null
+          }));
+        } finally {
+          client.release();
+        }
+        return;
+      }
+
+      // Only allow GET for table queries (read-only)
+      if (req.method !== 'GET' && !pathname.startsWith('/rest/v1/rpc/')) {
+        res.writeHead(405, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Read-only mode: only GET and RPC calls allowed' }));
+        return;
+      }
       
       // REST API endpoint: /rest/v1/tableName
       if (pathname.startsWith('/rest/v1/')) {
@@ -346,8 +392,12 @@ async function initialize() {
     syncManager = new SyncManager();
     await syncManager.initialize();
     
+    // Initialize function sync
+    const functionSync = new FunctionSync(credentials, postgresManager);
+
     // Inject components into sync manager
     syncManager.databaseSync = databaseSync;
+    syncManager.functionSync = functionSync;
     syncManager.postgresManager = postgresManager;
 
     // Create main window

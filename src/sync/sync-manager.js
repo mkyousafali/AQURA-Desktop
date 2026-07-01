@@ -12,6 +12,7 @@ const EventEmitter = require('events');
 const cloudConfig = require('../config/cloud-config');
 const logger = require('../logger/logger');
 const StorageSync = require('./storage-sync');
+const FunctionSync = require('./function-sync');
 
 class SyncManager extends EventEmitter {
   constructor() {
@@ -35,6 +36,7 @@ class SyncManager extends EventEmitter {
     // Sync components (will be initialized)
     this.databaseSync = null;
     this.storageSync = null;
+    this.functionSync = null;
     this.schemaMigration = null;
   }
 
@@ -58,6 +60,10 @@ class SyncManager extends EventEmitter {
       this.storageSync = new StorageSync(credentials);
       await this.storageSync.initialize();
       logger.info('Storage sync initialized');
+
+      // Initialize function sync (requires pgManager from main.js)
+      // Will be set externally like databaseSync
+      logger.info('Function sync will be initialized when pgManager is available');
       
       // this.schemaMigration = new SchemaMigration(credentials);
 
@@ -197,7 +203,7 @@ class SyncManager extends EventEmitter {
         const storageProgressCallback = (data) => {
           this.emit('sync-progress', {
             phase: 'storage',
-            progress: 50 + Math.floor((data.current / data.total) * 50),
+            progress: 50 + Math.floor((data.current / data.total) * 25),
             bucket: data.bucket,
             file: data.file,
             current: data.current,
@@ -212,20 +218,28 @@ class SyncManager extends EventEmitter {
         result.files = { downloaded: 0, skipped: 0 };
       }
 
-      // Phase 3: Sync storage files (background, non-blocking)
-      logger.logSync('PHASE 3: Storage sync', { syncId });
+      // Phase 4: Sync RPC function definitions
+      logger.logSync('PHASE 4: Function sync', { syncId });
       this.emit('sync-progress', { 
-        phase: 'storage', 
+        phase: 'functions', 
         progress: 75,
-        message: 'Starting storage file sync...'
+        message: 'Syncing RPC functions for offline use...'
       });
 
-      // TODO: Start storage sync in background
-      // if (this.storageSync) {
-      //   this.storageSync.syncInBackground();
-      // }
-
-      result.files = { synced: 0, failed: 0, pending: 0 };
+      if (this.functionSync) {
+        const funcProgressCallback = (data) => {
+          this.emit('sync-progress', {
+            phase: 'functions',
+            progress: 75 + Math.floor((data.progress || 0) * 0.25),
+            message: data.message || 'Syncing functions...'
+          });
+        };
+        const funcResult = await this.functionSync.syncAll(funcProgressCallback);
+        result.functions = funcResult;
+      } else {
+        logger.warn('FunctionSync not initialized');
+        result.functions = { synced: 0, failed: 0 };
+      }
 
       // Complete
       result.success = true;

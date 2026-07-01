@@ -297,7 +297,25 @@ class PostgresManager {
             database: 'postgres' // Connect to default database first
           });
           
-          const tempClient = await tempPool.connect();
+          // Wait for PG to be ready before trying to create DB
+          let tempClient;
+          for (let attempt = 1; attempt <= 5; attempt++) {
+            try {
+              tempClient = await tempPool.connect();
+              break;
+            } catch (startErr) {
+              if (attempt < 5 && startErr.code === '57P03') {
+                logger.info(`Waiting for PostgreSQL to start (attempt ${attempt}/5)...`);
+                await new Promise(r => setTimeout(r, 2000));
+              } else {
+                throw startErr;
+              }
+            }
+          }
+          
+          if (!tempClient) {
+            throw new Error('Could not connect to PostgreSQL for DB creation');
+          }
           
           // Check if aqura_desktop database exists
           const dbCheck = await tempClient.query(
@@ -320,10 +338,28 @@ class PostgresManager {
       // Create connection pool to aqura_desktop
       this.pool = new Pool(this.dbConfig);
 
-      // Test connection
-      const client = await this.pool.connect();
-      await client.query('SELECT NOW()');
-      client.release();
+      // Test connection with retries (PostgreSQL may still be starting up)
+      let connected = false;
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        try {
+          const client = await this.pool.connect();
+          await client.query('SELECT NOW()');
+          client.release();
+          connected = true;
+          break;
+        } catch (retryErr) {
+          if (attempt < 5 && retryErr.code === '57P03') {
+            logger.info(`PostgreSQL still starting up, retry ${attempt}/5...`);
+            await new Promise(r => setTimeout(r, 2000));
+          } else {
+            throw retryErr;
+          }
+        }
+      }
+
+      if (!connected) {
+        throw new Error('Could not connect to PostgreSQL after 5 retries');
+      }
 
       this.isConnected = true;
       logger.info('PostgreSQL connected successfully');
